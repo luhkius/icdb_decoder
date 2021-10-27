@@ -1,0 +1,177 @@
+Bakutsuri Bar Hunter 3ds icdb file format
+
+
+Info:
+
+.icdb files are a database file-format used in Bakutsuri Bar Hunter 3ds.
+I'm not highly experienced with database file-formats, so it's entirely possible that this format is also known by another name.
+As far as I'm aware though, this is a unique format which was developed by bandai.
+
+
+Structure:
+
+49 43 44 42 [ICDB] (magic header)
+01 00 00 00 (file format version number? Table count?)
+xx xx xx xx (Int32, Number of columns)
+xx xx xx xx (Int32, Number of rows)
+XX XX XX XX (Int32, Offset to Column ID array)
+XX XX XX XX (Int32, Offset to Row ID array (first row seems to always be null))
+XX XX XX XX (Int32, Offset where column information is stored (data types, pointers to names))
+XX XX XX XX (Int32, Offset where column names are stored)
+
+Immediately following the last int32 listed above, there's an array/list of what I assume are either ID's or hashes
+They're int64 values, and there's one for each column and row.
+
+These values aren't important for parsing the files, so I recommend skipping them all.
+The 'Offset of column information' listed above, immediately follows the row ID array
+
+This is an array of column/field information.
+One pair of int32's for each column
+The first int32 is the field type
+0 = int32
+1 = float/single
+2 = string (null terminated)
+Then another int32 will point to the offset within the file, where the name of the column is stored.
+There could potentially be more supported data types, but these three are the only types I've encountered.
+
+After this, the 'real' data begins.
+Each row contains data for each of the above columns, in the order that they appear in the file. (example below will explain this better than I can with words)
+Use the data types above in the order they appear to decode the data.
+If the type is a string, it will be an int32 pointer to a location within the file, where the null-terminated string can be read.
+Otherwise, just read the int32/single
+Each row of data starts with an int32. I'm not sure what this value is, but it appears to be 0 for all 'real' data, and 1 for the first line. I assume it's a value to indicate whether the row is empty, or the 'title' row.
+
+After all of the rows of data, the row names are stored as strings, followed by any data strings.
+
+Strings are padded with null bytes, to the nearest multiple of 4. I'd assume the game reads strings in 4-byte chunks.
+
+
+*All Int32 entries could actually be unsigned int32's, but I haven't encountered a value large enough to validate it yet.
+
+
+Example using 'SubTableCompleteDB.icdb'
+
+Hex data:
+
+49 43 44 42 01 00 00 00 06 00 00 00 03 00 00 00
+24 00 00 00 54 00 00 00 6C 00 00 00 9C 00 00 00
+F0 00 00 00 68 DC 7E 26 05 00 00 00 CB 49 1A 38
+02 00 00 00 5D 79 1D 4F 03 00 00 00 71 18 13 21
+01 00 00 00 42 25 B5 7A 00 00 00 00 FE EC 79 51
+04 00 00 00 00 00 00 00 00 00 00 00 8A DF 77 72
+01 00 00 00 30 8E 7E 6B 02 00 00 00 00 00 00 00
+F0 00 00 00 02 00 00 00 F8 00 00 00 02 00 00 00
+04 01 00 00 02 00 00 00 10 01 00 00 02 00 00 00
+1C 01 00 00 02 00 00 00 28 01 00 00 01 00 00 00
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00 00 00 00 00 33 00 00 00
+34 01 00 00 44 01 00 00 54 01 00 00 64 01 00 00
+68 01 00 00 00 00 00 00 34 00 00 00 6C 01 00 00
+7C 01 00 00 8C 01 00 00 9C 01 00 00 A0 01 00 00
+54 61 62 6C 65 49 44 00 42 61 72 63 6F 64 65 31
+00 00 00 00 42 61 72 63 6F 64 65 32 00 00 00 00
+42 61 72 63 6F 64 65 33 00 00 00 00 42 61 72 63
+6F 64 65 34 00 00 00 00 42 61 72 63 6F 64 65 35
+00 00 00 00 31 35 38 30 37 36 38 32 35 36 30 39
+37 00 00 00 31 35 39 37 38 31 34 34 34 39 35 32
+35 00 00 00 31 36 30 31 38 32 39 38 33 30 31 35
+32 00 00 00 00 00 00 00 00 00 00 00 31 36 31 38
+30 39 38 32 35 38 34 32 36 00 00 00 31 36 32 37
+35 37 36 30 39 33 38 33 31 00 00 00 31 36 33 30
+31 33 39 30 30 32 38 33 36 00 00 00 00 00 00 00
+00 00 00 00
+
+
+
+Annotated:
+
+49 43 44 42 ("ICDB": header string)
+01 00 00 00 (1: Unknown value. Assumed file format version)
+06 00 00 00	(6: Column count)
+03 00 00 00	(3: Row count)
+24 00 00 00 (36: Offset for column ID array)
+54 00 00 00 (84: Offset for row ID array)
+6C 00 00 00 (108: Offset for column info)
+9C 00 00 00 (156: Offset for column data)
+F0 00 00 00 (240: Offset for column names/strings)
+
+
+[Column ID/Hash array]
+68 DC 7E 26 05 00 00 00
+CB 49 1A 38 02 00 00 00
+5D 79 1D 4F 03 00 00 00
+71 18 13 21 01 00 00 00
+42 25 B5 7A 00 00 00 00
+FE EC 79 51 04 00 00 00
+
+[Row ID/Hash array]
+00 00 00 00 00 00 00 00
+8A DF 77 72 01 00 00 00
+30 8E 7E 6B 02 00 00 00
+
+[Column info]
+[00 00 00 00] [F0 00 00 00]		|	Type 0 (int32), Column name at offset 0xF0 (240) > "TableID"
+[02 00 00 00] [F8 00 00 00]		|	Type 2 (string), Column name at offset 0xF8 (248) > "Barcode1"
+[02 00 00 00] [04 01 00 00]		|	Type 2 (string), Column name at offset 0x0104 (260) > "Barcode2"
+[02 00 00 00] [10 01 00 00]		|	Type 2 (string), Column name at offsex 0x0110 (272) > "Barcode3"
+[02 00 00 00] [1C 01 00 00]		|	Type 2 (string), Column name at offsex 0x011c (284) > "Barcode4"
+[02 00 00 00] [28 01 00 00]		|	Type 2 (string), Column name at offsex 0x0128 (296) > "Barcode5"
+
+[Row data]
+Use the column data above to decode the correct types (int32, string, string, string, string, string)
+
+[Row 1 (null data)]
+01 00 00 00		|	IsTitle/IsNull: 1 (yes)
+00 00 00 00		|	0
+00 00 00 00		|	0
+00 00 00 00		|	0
+00 00 00 00		|	0
+00 00 00 00		|	0
+00 00 00 00		|	0
+
+[Row 2]
+00 00 00 00		|	IsTitle/IsNull: 0 (no)
+33 00 00 00		|	First column data (int32: 51)
+34 01 00 00		|	Second column data (pointer to string: 308 > "1580768256097")
+44 01 00 00		|	Third column data (Pointer to string: 324 > "1597814449525")
+54 01 00 00		|	Fourth column data (Pointer to string: 340 > "1601829830152")
+64 01 00 00		|	Fifth column data (Pointer to string: 356 > "")
+68 01 00 00		|	Sixth column data (Pointer to string: 360 > "")
+
+[Row 3]
+00 00 00 00		|	IsTitle/IsNull: 0 (no)
+34 00 00 00		|	First column data (int32: 52)
+6C 01 00 00		|	Second column data (pointer to string: 364 > "1618098258426")
+7C 01 00 00		|	Third column data (Pointer to string: 380 > "1627576093831")
+8C 01 00 00		|	Fourth column data (Pointer to string: 396 > "1630139002836")
+9C 01 00 00		|	Fifth column data (Pointer to string: 412 > "")
+A0 01 00 00		|	Sixth column data (Pointer to string: 416 > "")
+
+[Column names]
+54 61 62 6C 65 49 44 00					|	"TableID"
+42 61 72 63 6F 64 65 31 00 00 00 00		|	"Barcode1"
+42 61 72 63 6F 64 65 32 00 00 00 00		|	"Barcode2"
+42 61 72 63 6F 64 65 33 00 00 00 00		|	"Barcode3"
+42 61 72 63 6F 64 65 34 00 00 00 00		|	"Barcode4"
+42 61 72 63 6F 64 65 35 00 00 00 00		|	"Barcode5"
+
+[String data]
+31 35 38 30 37 36 38 32 35 36 30 39 37 00 00 00								|	"1580768256097"
+31 35 39 37 38 31 34 34 34 39 35 32 35 00 00 00								|	"1597814449525"
+31 36 30 31 38 32 39 38 33 30 31 35 32 00 00 00								|	"1601829830152"
+00 00 00 00																	|	""	(NULL)
+00 00 00 00																	|	""	(NULL)
+31 36 31 38 30 39 38 32 35 38 34 32 36 00 00 00								|	"1618098258426"
+31 36 32 37 35 37 36 30 39 33 38 33 31 00 00 00								|	"1627576093831"
+31 36 33 30 31 33 39 30 30 32 38 33 36 00 00 00								|	"1630139002836"
+00 00 00 00																	|	""	(NULL)
+00 00 00 00																	|	""	(NULL)
+
+
+
+Decoded as a .csv: (spaces added for extra readability)
+
+TableID,       Barcode1,       Barcode2,       Barcode3,       Barcode4,       Barcode5
+0,             NULL,           NULL,           NULL,           NULL,           NULL
+51,            1580768256097,  1597814449525,  1601829830152,  NULL,           NULL
+52,            1618098258426,  1627576093831,  1630139002836,  NULL,           NULL
