@@ -1,5 +1,5 @@
 # icdb_decoder
-Decode ICDB files for bakutsuri 3ds
+Decode ICDB files for the Bakutsuri Bar Hunter 3ds game
 
 # Build
 This code is reasonably framework-agnostic, and should compile with any of the latest C# .net toolchains
